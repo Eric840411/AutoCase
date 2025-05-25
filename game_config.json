@@ -1,0 +1,16 @@
+[
+    {
+        "gamename": "118 - Carnival Cow",
+        "url": "https://osmclient-c-new.bewen.me/?token=bc42b74c2b91e1aa4b489f93f5dafd7f-315142&platform=pc&mode=live&language=zh_cn&studioid=cp&gameid=osmjjbxgold&lang=en_us&username=cpqqe&device=mobile",
+        "rtmp": "COINCOMBO118",
+        "rtmp_url": "rtmp://13.213.93.21:1888/live/COINCOMBO118_MAIN",
+        "game_title_code": "873-COINCOMBO-0118"
+    },
+    {
+        "gamename": "CoinCombo115",
+        "url": "https://osmclient-c-new.bewen.me/?token=26d7a8cc9d4bc7fa9bbb808a14914762-315146&platform=pc&mode=live&language=zh_cn&studioid=cp&gameid=osmcoincombo&lang=en_us&username=cpeee&device=mobile",
+        "rtmp": "COINCOMBO115",
+        "rtmp_url": "rtmp://13.213.93.21:1888/live/COINCOMBO115_MAIN",
+        "game_title_code": "873-COINCOMBO-0115"
+    }
+]

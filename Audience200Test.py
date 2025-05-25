@@ -21,9 +21,9 @@ edge_options.add_experimental_option("prefs", prefs)
 drivers = []  # 存放所有 WebDriver
 
 # 初始視窗位置
-start_x = -1000  # 初始 X 座標
-start_y = -1920  # 初始 Y 座標
-offset_x = 50    # 每個新視窗向右偏移的距離
+# start_x = -1000  # 初始 X 座標
+# start_y = -1920  # 初始 Y 座標
+# offset_x = 50    # 每個新視窗向右偏移的距離
 
 # 讀取帳號列表
 with open('accounts.csv', mode='r') as file:
@@ -36,20 +36,20 @@ with open('accounts.csv', mode='r') as file:
         account = row['account']
         print(f"帳號: {account}")
 
-        
-
         # 啟動瀏覽器
-        driver = webdriver.Edge(service=Service("/Users/qa-1/Downloads/edgedriver_mac64_m1/msedgedriver"), options=edge_options)
-        driver.get("https://www.client88.me/home/")
+        driver = webdriver.Edge(service=Service(r"C:\Users\Eric\Downloads\edgedriver_win64\msedgedriver.exe"), options=edge_options)
+        driver.get("https://www.client8.me/home/")
 
         # 設定視窗位置，每次往右偏移 offset_x
-        driver.set_window_position(start_x + (index * offset_x), start_y)
+        # driver.set_window_position(start_x + (index * offset_x), start_y)
         # index += 1  # 增加索引，讓下一個視窗往右偏移
 
         time.sleep(3)
         
         # 找到同意按鈕
-        play_button = driver.find_element(By.CSS_SELECTOR, ".btn.btn-accept")  
+
+        wait = WebDriverWait(driver,10)
+        play_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".btn.btn-accept")))
         play_button.click()
 
         time.sleep(1)
@@ -102,7 +102,7 @@ with open('accounts.csv', mode='r') as file:
         try:
             # 等待 close-btn 出現並可點擊
             close_button = WebDriverWait(driver, 10).until(
-                           EC.element_to_be_clickable((By.CLASS_NAME, "close-btn"))
+                           EC.element_to_be_clickable((By.XPATH, "//button[text()='Accept']"))
                            )
             # 點擊關閉按鈕
             close_button.click()
@@ -146,17 +146,17 @@ with open('accounts.csv', mode='r') as file:
 
         time.sleep(5)
 
-        # **1. 切換到 iframe**
+        # 切換到 iframe
         WebDriverWait(driver, 10).until(
           EC.frame_to_be_available_and_switch_to_it((By.ID, "iframe_id"))
         )
     
-        # **2. 找到所有 `grid_gm_item`**
+        # 找到所有 `grid_gm_item`
         items = WebDriverWait(driver, 10).until(
           EC.presence_of_all_elements_located((By.ID, "grid_gm_item"))
         )
     
-        # **3. 遍歷並點擊 "873-JJBXGOLD-1001"**
+        # 遍歷並點擊 "873-JJBXGOLD-1001"
         for item in items:
              if "873-JJBXGOLD-1001" in item.get_attribute("title"):
                    driver.execute_script("arguments[0].scrollIntoView();", item)  # 滾動到可視範圍
