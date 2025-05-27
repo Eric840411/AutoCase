@@ -183,6 +183,7 @@ def spin_forever(driver, rtmp_name=None, rtmp_url=None, game_title_code=None):
                             scroll_and_click_game(driver, game_title_code)
                             time.slepp(3)
                             continue
+
                         except Exception as quit_err:
                             print(f"❌ 找不到退出按鈕或操作失敗: {quit_err}")
 
@@ -195,6 +196,16 @@ def spin_forever(driver, rtmp_name=None, rtmp_url=None, game_title_code=None):
                 driver.execute_script("arguments[0].click();", spin_btn)
                 print("✅ 已點擊 Spin:")
                 print(f"剩餘（{bal_text}）")
+
+                # 點擊15,6
+                try:
+                    special_btn = WebDriverWait(driver,2).until(
+                        EC.presence_of_all_elements_located((By.XPATH,"//span[text()='15,6']"))
+                    )
+                    driver.execute_script("argument[0].click();",special_btn)
+                    print("✅ 已點擊 15,6:")
+                except Exception as e:
+                    print("找不到 15,6:")
                 spin_clicked = True
             except Exception as click_err:
                 print(f"❌ {game_title_code} 找不到 Spin 或點擊失敗: {click_err}")
