@@ -16,10 +16,12 @@ import traceback
 
 # 設定截圖儲存路徑
 SCREENSHOT_RTMP = "stream_captures"
+SCREENSHOT_DIR = "screenshots"
 os.makedirs(SCREENSHOT_RTMP, exist_ok=True)
+os.makedirs(SCREENSHOT_DIR, exist_ok=True)
 
 # 設定 log 紀錄檔
-logging.basicConfig(
+logging.basicConfig(    
     filename="error_log.txt",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
@@ -29,6 +31,14 @@ stop_event = threading.Event()
 
 last_image_hash = {}
 
+# 這裡可新增更多關鍵字對應座標或行為
+keyword_actions = {
+    "COINCOMBO": ["19,38"],
+    "JJBXGRAND": ["20,20", "21,21"],
+    "BZZF": ["5,5"]
+    }
+
+# 計算檔案 MD5 用於重複檢測
 def file_hash(path):
     hasher = hashlib.md5()
     with open(path, 'rb') as afile:
@@ -36,7 +46,8 @@ def file_hash(path):
         hasher.update(buf)
     return hasher.hexdigest()
 
-def capture_rtmp_ffmpeg(name, rtmp_url, interval=10, template_path="error_template.png", threshold=0.40):
+# 圖像辨識，比對錯誤的圖
+def capture_rtmp_ffmpeg(name, rtmp_url, interval=10, template_path="error_template.png", threshold=0.50):
     retry_count = 0
     max_retries = 3
     repeat_count = 0
@@ -74,7 +85,7 @@ def capture_rtmp_ffmpeg(name, rtmp_url, interval=10, template_path="error_templa
 
                 img_rgb = cv2.imread(filename)
                 if img_rgb is not None and img_rgb.shape[0] > 0 and img_rgb.shape[1] > 0:
-                    template = cv2.imread(r"C:\Users\Eric\Desktop\Test\AutoCase\AutoCase\error_template.png")
+                    template = cv2.imread(r"C:\Users\Eric\Desktop\Test\AutoCase\AutoCase\error_template.png") # 比對圖檔路徑
                     if template is not None:
                         result = cv2.matchTemplate(img_rgb, template, cv2.TM_CCOEFF_NORMED)
                         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
@@ -102,8 +113,9 @@ def capture_rtmp_ffmpeg(name, rtmp_url, interval=10, template_path="error_templa
             retry_count += 1
             time.sleep(2)
 
+# 找尋遊戲
 def scroll_and_click_game(driver, game_title_code):
-    try:
+    try:        
         # 等待所有可點擊的遊戲元素加載完成
         items = WebDriverWait(driver, 10).until(
             EC.presence_of_all_elements_located((By.ID, "grid_gm_item"))
@@ -128,6 +140,18 @@ def scroll_and_click_game(driver, game_title_code):
                         if join_btn.is_displayed():
                             driver.execute_script("arguments[0].click();", join_btn)
                             print("🎮 成功點擊 Join 進入遊戲")
+                            time.sleep(5)
+                            # Join 之後，若為特殊流程則點擊 (19,38)
+                            is_special = False
+                            if game_title_code:
+                                for kw, positions in keyword_actions.items():
+                                    if kw in game_title_code:
+                                        is_special = True
+                                        break
+                            if is_special:
+                                print(f"🔹 Join 後特殊流程: {game_title_code} 包含關鍵字 '{kw}'，點擊 {positions}")
+                                click_multiple_positions(driver, positions)
+                                time.sleep(2)
                             return True
                     print("⚠️ 找到 gm-info-box，但沒有可見的 Join 按鈕")
                 except Exception as join_err:
@@ -140,7 +164,22 @@ def scroll_and_click_game(driver, game_title_code):
         print(f"❌ 執行滑動並點擊遊戲時失敗: {e}")
     return False
 
+# 找尋座標
+def click_multiple_positions(driver, positions):
+    for pos in positions:
+        try:
+            xpath = f"//span[text()='{pos}']"
+            elems = WebDriverWait(driver, 2).until(
+                EC.presence_of_all_elements_located((By.XPATH, xpath))
+            )
+            if elems:
+                driver.execute_script("arguments[0].click();", elems[0])
+                print(f"✅ 已點擊座標位: {pos}")
+                time.sleep(1) # 延遲一秒
+        except Exception as e:
+            print(f"❌ 找不到座標位 {pos}: {e}")
 
+# 自動投注的流程
 def spin_forever(driver, rtmp_name=None, rtmp_url=None, game_title_code=None):
     last_check_time = 0
     try:
@@ -181,32 +220,30 @@ def spin_forever(driver, rtmp_name=None, rtmp_url=None, game_title_code=None):
                             # 如果沒點擊成功，嘗試返回大廳點擊遊戲
                             print(f"退出後返回原機器: {game_title_code}")
                             scroll_and_click_game(driver, game_title_code)
-                            time.slepp(3)
+                            time.sleep(5)
                             continue
-
                         except Exception as quit_err:
                             print(f"❌ 找不到退出按鈕或操作失敗: {quit_err}")
 
                 except Exception as bal_err:
                     print(f"⚠️ 無法取得 BAL 數值: {bal_err}")
 
+                
                 spin_btn = WebDriverWait(driver, 10).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, ".my-button.btn_spin"))
                 )
                 driver.execute_script("arguments[0].click();", spin_btn)
                 print("✅ 已點擊 Spin:")
-                print(f"剩餘（{bal_text}）")
+                print(f"{rtmp_name} 剩餘（{bal_text}）")
 
-                # 點擊15,6
-                try:
-                    special_btn = WebDriverWait(driver,2).until(
-                        EC.presence_of_all_elements_located((By.XPATH,"//span[text()='15,6']"))
-                    )
-                    driver.execute_script("argument[0].click();",special_btn)
-                    print("✅ 已點擊 15,6:")
-                except Exception as e:
-                    print("找不到 15,6:")
+                # 每次 Spin 後截圖
+                ts = time.strftime("%Y%m%d_%H%M%S")
+                spin_shot = os.path.join(SCREENSHOT_DIR, f"spin_{rtmp_name}_{ts}.png")
+                driver.save_screenshot(spin_shot)
+                print(f"📸 已保存 Spin 截圖: {spin_shot}")
+
                 spin_clicked = True
+                
             except Exception as click_err:
                 print(f"❌ {game_title_code} 找不到 Spin 或點擊失敗: {click_err}")
                 if not spin_clicked and game_title_code:
